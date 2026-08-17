@@ -1,0 +1,7 @@
+.env
+.env.example
+churn_ai
+__pycache__
+POSTMAN_TESTING_GUIDE.md
+test_customers.csv
+.venv

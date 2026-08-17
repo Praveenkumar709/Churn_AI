@@ -1,0 +1,9 @@
+
+
++
+__pycache__
+model
+# Ignore dataset files
+dataset.csv
+artifacts/
+.venv
