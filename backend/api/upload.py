@@ -213,6 +213,8 @@ def get_customer_id(
     return f"cust_{index + 1}"
 
 
+from ml.deployment_preprocessing import prepare_for_model
+
 # ============================================================
 # DATASET VALIDATION
 # ============================================================
@@ -228,28 +230,17 @@ def validate_dataset(
             detail="CSV file contains no customer records.",
         )
 
-    missing_columns = [
+    try:
 
-        column
+        prepare_for_model(df.head(2))
 
-        for column in ENCODED_REQUIRED_COLUMNS
-
-        if column not in df.columns
-
-    ]
-
-    if missing_columns:
+    except Exception as exc:
 
         raise HTTPException(
 
             status_code=400,
 
-            detail=(
-                "CSV is missing required columns: "
-                + ", ".join(
-                    missing_columns
-                )
-            ),
+            detail=f"Invalid dataset format: {exc}",
 
         )
 

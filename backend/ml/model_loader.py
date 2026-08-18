@@ -38,9 +38,10 @@ class ModelLoader:
 
         if not os.path.exists(model_path):
             print(
-                f"Churn model not found: {model_path}"
+                f"Churn model not found: {model_path}. Attempting auto-training..."
             )
-            return False
+            if not self._auto_train_model(model_path):
+                return False
 
         try:
             self.best_model = joblib.load(
@@ -166,3 +167,49 @@ class ModelLoader:
             "accuracy": self.best_accuracy,
             "feature_columns": feature_columns,
         }
+
+    def _auto_train_model(self, model_path):
+        """Auto-train Logistic Regression model if missing."""
+        try:
+            import pandas as pd
+            from sklearn.linear_model import LogisticRegression
+            from ml.deployment_preprocessing import prepare_for_model
+
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            candidate_paths = [
+                os.path.join(base_dir, "backend", "ml", "data", "dataset.csv"),
+                os.path.join(base_dir, "data", "telecom_churn_100k.csv"),
+                os.path.join(base_dir, "sample_customer_churn.csv"),
+            ]
+
+            dataset_path = None
+            for path in candidate_paths:
+                if os.path.exists(path):
+                    dataset_path = path
+                    break
+
+            if not dataset_path:
+                print("No dataset found for auto-training.")
+                return False
+
+            print(f"Auto-training model on dataset: {dataset_path}")
+            df = pd.read_csv(dataset_path)
+
+            if "Churn" not in df.columns:
+                print("Dataset missing 'Churn' column for training.")
+                return False
+
+            y = pd.to_numeric(df["Churn"], errors="coerce").fillna(0).astype(int)
+            X = prepare_for_model(df)
+
+            model = LogisticRegression(max_iter=1000, random_state=42)
+            model.fit(X, y)
+
+            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            joblib.dump(model, model_path)
+            self.best_model = model
+            print(f"Auto-trained model saved to {model_path}")
+            return True
+        except Exception as exc:
+            print(f"Auto-training failed: {exc}")
+            return False

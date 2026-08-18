@@ -57,9 +57,10 @@ class PredictionService:
 
             if not self.initialize():
 
-                raise RuntimeError(
-                    "Failed to initialize prediction service"
-                )
+                return {
+                    "success": False,
+                    "error": "Failed to initialize prediction service: Churn model could not be loaded."
+                }
 
         try:
 
@@ -116,9 +117,10 @@ class PredictionService:
 
             if not self.initialize():
 
-                raise RuntimeError(
-                    "Failed to initialize prediction service"
-                )
+                return {
+                    "success": False,
+                    "error": "Failed to initialize prediction service: Churn model could not be loaded."
+                }
 
         try:
 
@@ -196,9 +198,10 @@ class PredictionService:
 
             if not self.initialize():
 
-                raise RuntimeError(
-                    "Failed to initialize prediction service"
-                )
+                return {
+                    "success": False,
+                    "error": "Failed to initialize prediction service: Churn model could not be loaded."
+                }
 
         try:
 

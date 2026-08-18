@@ -19,11 +19,25 @@ sys.path.insert(0, "backend")
 from ml.deployment_preprocessing import prepare_for_model
 
 
-DATA_FILE = "./data/telecom_churn_100k.csv"
-MODEL_FILE = "./backend/models/logistic_regression_100k.joblib"
+candidate_data_files = [
+    "./data/telecom_churn_100k.csv",
+    "./backend/ml/data/dataset.csv",
+    os.path.join(os.path.dirname(__file__), "backend", "ml", "data", "dataset.csv"),
+]
+
+DATA_FILE = None
+for path in candidate_data_files:
+    if os.path.exists(path):
+        DATA_FILE = path
+        break
+
+if not DATA_FILE:
+    raise FileNotFoundError(f"Could not find dataset in any of: {candidate_data_files}")
+
+MODEL_FILE = os.path.join(os.path.dirname(__file__), "backend", "models", "logistic_regression_100k.joblib")
 
 
-print("Loading dataset...")
+print(f"Loading dataset from {DATA_FILE}...")
 
 df = pd.read_csv(DATA_FILE)
 

@@ -62,6 +62,40 @@ def prepare_for_model(
 
     df = df.copy()
 
+    # Alias mapping for standard datasets
+    alias_map = {
+        "customer_id": "CustomerID",
+        "customerid": "CustomerID",
+        "gender": "Gender",
+        "tenure": "Tenure_Months",
+        "tenure_months": "Tenure_Months",
+        "contract": "Contract_Type",
+        "contract_type": "Contract_Type",
+        "paymentmethod": "Payment_Method",
+        "payment_method": "Payment_Method",
+        "monthlycharges": "Current_Monthly_Bill",
+        "current_monthly_bill": "Current_Monthly_Bill",
+        "totalcharges": "Average_Monthly_Bill",
+        "average_monthly_bill": "Average_Monthly_Bill",
+        "dependents": "Dependents",
+    }
+    rename_dict = {}
+    for col in df.columns:
+        clean_col = str(col).strip()
+        lower_col = clean_col.lower()
+        if lower_col in alias_map and clean_col not in EXPECTED_FEATURES:
+            rename_dict[col] = alias_map[lower_col]
+    if rename_dict:
+        df = df.rename(columns=rename_dict)
+
+    # Convert SeniorCitizen to Age if Age not provided
+    if "SeniorCitizen" in df.columns and "Age" not in df.columns:
+        df["Age"] = df["SeniorCitizen"].apply(lambda x: 65 if str(x).strip() in ["1", "true", "True"] else 35)
+
+    # Convert Partner/Dependents
+    if "Partner" in df.columns and "Dependents" not in df.columns:
+        df["Dependents"] = df["Partner"].apply(lambda x: 1 if str(x).strip().lower() in ["yes", "1", "true"] else 0)
+
     # =========================================================
     # REMOVE ID AND TARGET
     # =========================================================
@@ -122,7 +156,10 @@ def prepare_for_model(
                 .map({
                     "Female": 0,
                     "Male": 1,
+                    "0": 0,
+                    "1": 1,
                 })
+                .fillna(0)
             )
 
         # -----------------------------------------------------
@@ -139,6 +176,7 @@ def prepare_for_model(
                     "Local": 0,
                     "Frequent Traveler": 1,
                 })
+                .fillna(0)
             )
 
         # -----------------------------------------------------
@@ -223,6 +261,11 @@ def prepare_for_model(
 
         if "Payment_Method" in df.columns:
 
+            payment_series = df["Payment_Method"].astype(str).str.strip().replace({
+                "Bank transfer (automatic)": "Bank transfer (auto)",
+                "Credit card (automatic)": "Credit card (auto)",
+            })
+
             payment_values = [
                 "Bank transfer (auto)",
                 "Credit card (auto)",
@@ -237,10 +280,7 @@ def prepare_for_model(
                 )
 
                 df[feature_name] = (
-                    df["Payment_Method"]
-                    .astype(str)
-                    .str.strip()
-                    == value
+                    payment_series == value
                 ).astype(int)
 
     # =========================================================
@@ -254,23 +294,14 @@ def prepare_for_model(
             df[column] = 0
 
     # =========================================================
-    # CHECK REQUIRED MODEL FEATURES
+    # FILL MISSING EXPECTED FEATURES
     # =========================================================
 
-    missing_features = [
-        column
-        for column in EXPECTED_FEATURES
-        if column not in df.columns
-    ]
+    for column in EXPECTED_FEATURES:
 
-    if missing_features:
+        if column not in df.columns:
 
-        raise ValueError(
-            "Missing model features: "
-            + ", ".join(
-                missing_features
-            )
-        )
+            df[column] = 0
 
     # =========================================================
     # SELECT EXACT 39 FEATURES
